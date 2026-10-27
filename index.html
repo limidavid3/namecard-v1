@@ -177,7 +177,7 @@ a.kv .v{color:var(--accent)}
 .sheet{position:fixed;left:8px;right:8px;bottom:calc(var(--sb) + 8px);z-index:51;transform:translateY(120%);transition:transform .22s ease;max-height:80vh;display:flex;flex-direction:column}
 .sheet.on{transform:none}
 .sheet .opts{background:var(--surface);border-radius:14px;overflow:auto}
-.sheet .ttl{padding:12px 16px;text-align:center;font-size:13px;color:var(--muted);border-bottom:1px solid var(--line);word-break:break-word}
+.sheet .ttl{white-space:pre-line;padding:12px 16px;text-align:center;font-size:13px;color:var(--muted);border-bottom:1px solid var(--line);word-break:break-word}
 .sheet .opts button{display:block;width:100%;height:54px;font-size:18px;color:var(--accent);border-top:1px solid var(--line)}
 .sheet .opts button:first-of-type{border-top:0}
 .sheet .opts .ttl+button{border-top:0}
@@ -1370,10 +1370,24 @@ function splitName(n) {
   if (cjkOnly(n)) { const d = DOUBLE_SURNAMES.find(x => n.startsWith(x)) && n.length > 2 ? 2 : 1; return [n.slice(0, d), n.slice(d)]; }
   const p = n.split(/\s+/); return p.length > 1 ? [p.pop(), p.join(' ')] : [n, ''];
 }
-async function share(blob, name) {
-  const file = new File([blob], name, { type: blob.type });
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file] }); return; } catch (e) { if (e.name === 'AbortError') return; }
+// 注意：iPhone 只允許「使用者點按後立刻」呼叫分享，所以這個函式必須在點按當下直接呼叫，前面不能有 await
+async function share(blob, name, retry) {
+  let file = null;
+  if (navigator.canShare) {
+    for (const type of [blob.type, 'text/plain', 'application/octet-stream']) {
+      const f = new File([blob], name, { type });
+      if (navigator.canShare({ files: [f] })) { file = f; break; }
+    }
+  }
+  if (file) {
+    try { await navigator.share({ files: [file] }); return; }
+    catch (e) {
+      if (e.name === 'AbortError') return;
+      if (e.name === 'NotAllowedError' && !retry) {
+        sheet('檔案已準備好', [{ label: '儲存或分享 ' + name, fn: () => share(blob, name, true) }]);
+        return;
+      }
+    }
   }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
   document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 5000);
@@ -1406,7 +1420,9 @@ async function exportJSON() {
   const out = [];
   for (const c of cards) { const o = Object.assign({}, c); for (const k of BLOB_KEYS) o[k] = await blobToDataURL(c[k]); out.push(o); }
   const blob = new Blob([JSON.stringify({ app: 'cardbox', version: 1, exportedAt: new Date().toISOString(), cards: out })], { type: 'application/json' });
-  await share(blob, `名片備份-${stamp()}.json`);
+  const name = `名片備份-${stamp()}.json`, mb = (blob.size / 1048576).toFixed(1);
+  // 打包照片需要時間，iPhone 會擋掉延遲的分享，所以打包好後再讓使用者點一次
+  sheet(`備份檔已準備好：${cards.length} 張名片（${mb} MB）\n點下方按鈕後，選「儲存到檔案」`, [{ label: '儲存或分享備份檔', fn: () => share(blob, name) }]);
 }
 async function exportCSV() {
   if (!cards.length) return toast('目前沒有名片可以匯出');
