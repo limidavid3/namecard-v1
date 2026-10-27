@@ -130,11 +130,11 @@ a.kv .v{color:var(--accent)}
 .photo{position:relative;border-radius:12px;overflow:hidden;background:var(--surface2);border:1px dashed var(--line);
   aspect-ratio:1.66;display:grid;place-items:center;color:var(--muted)}
 .photo img{width:100%;height:100%;object-fit:contain;display:block}
-.tools{display:flex;gap:8px;margin:10px 0 4px}
-.tools button{flex:1;height:40px;border-radius:10px;background:var(--surface);box-shadow:var(--shadow);
-  font-size:14px;font-weight:600;color:var(--accent);display:flex;align-items:center;justify-content:center;gap:6px}
+.tools{display:flex;gap:6px;margin:10px 0 4px}
+.tools button{flex:1;height:54px;border-radius:10px;background:var(--surface);box-shadow:var(--shadow);
+  font-size:12.5px;font-weight:600;color:var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
 .tools button:disabled{opacity:.4}
-.tools button.icon-only{flex:0 0 44px;color:var(--danger)}
+.tools button.icon-only{flex:0 0 48px;color:var(--danger)}
 .sides{margin:0 0 10px}
 .photo.empty{cursor:pointer}
 .photo .add{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--accent);font-weight:600;font-size:15px}
@@ -193,6 +193,18 @@ a.kv .v{color:var(--accent)}
 .zoom .x{position:fixed;top:calc(var(--st) + 10px);right:14px;width:40px;height:40px;border-radius:20px;background:rgba(255,255,255,.18);color:#fff;font-size:22px;z-index:2}
 .zoom .zhint{position:fixed;bottom:calc(var(--sb) + 18px);left:0;right:0;text-align:center;color:#fff9;font-size:13px}
 
+.crop-view{background:#111;color:#fff}
+.crop-view .bar{background:#111;border-bottom-color:#222}
+.crop-view .bar button{color:#45c3a7}
+.c-hint{text-align:center;font-size:14px;color:#bbb;padding:8px 16px 0}
+.c-stage{position:relative;flex:1;touch-action:none;overflow:hidden;user-select:none;-webkit-user-select:none}
+.c-stage canvas#c-img{position:absolute}
+.c-stage svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#c-loupe{position:absolute;width:124px;height:124px;border-radius:62px;border:3px solid #fff;box-shadow:0 4px 16px rgba(0,0,0,.6);pointer-events:none;background:#000}
+.c-tools{display:flex;gap:8px;padding:10px 16px calc(var(--sb) + 14px)}
+.c-tools button{flex:1;height:52px;border-radius:12px;background:#222;color:#fff;font-size:13px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.c-tools button:active{background:#333}
+.c-tools svg.i{width:20px;height:20px}
 .toast{position:fixed;left:50%;bottom:calc(var(--sb) + 96px);transform:translate(-50%,20px);background:rgba(30,30,28,.92);color:#fff;
   padding:10px 18px;border-radius:22px;font-size:15px;opacity:0;transition:.2s;pointer-events:none;z-index:70;max-width:86vw;text-align:center}
 .toast.on{opacity:1;transform:translate(-50%,0)}
@@ -214,6 +226,9 @@ a.kv .v{color:var(--accent)}
   <symbol id="ic-map" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></symbol>
   <symbol id="ic-rotate" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></symbol>
   <symbol id="ic-scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 12h10"/></symbol>
+  <symbol id="ic-crop" viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14M2 6h14a2 2 0 0 1 2 2v14"/></symbol>
+  <symbol id="ic-auto" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="m12 8 1.2 2.8L16 12l-2.8 1.2L12 16l-1.2-2.8L8 12l2.8-1.2z"/></symbol>
+  <symbol id="ic-full" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1.5"/><circle cx="9" cy="9" r="1.5"/><path d="m20 15-4-4-9 9"/></symbol>
   <symbol id="ic-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
   <symbol id="ic-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></symbol>
 </svg>
@@ -274,6 +289,7 @@ a.kv .v{color:var(--accent)}
       <div class="photo" id="e-photo"><img id="e-img" alt="" hidden><span id="e-noimg"></span></div>
       <div class="tools">
         <button id="e-retake"><svg class="i"><use href="#ic-cam"/></svg><span id="e-retake-t">換照片</span></button>
+        <button id="e-crop"><svg class="i"><use href="#ic-crop"/></svg>調整範圍</button>
         <button id="e-rotate"><svg class="i"><use href="#ic-rotate"/></svg>旋轉</button>
         <button id="e-reocr"><svg class="i"><use href="#ic-scan"/></svg>重新辨識</button>
         <button id="e-remove" class="icon-only" aria-label="移除背面" hidden><svg class="i"><use href="#ic-trash"/></svg></button>
@@ -288,6 +304,26 @@ a.kv .v{color:var(--accent)}
         <div class="raw-lines" id="raw-lines"></div>
       </details>
     </div>
+  </div>
+</section>
+
+<!-- ============ 調整範圍 ============ -->
+<section id="v-crop" class="view crop-view">
+  <header class="bar">
+    <button class="back" id="c-cancel">取消</button>
+    <span class="bar-title">調整範圍</span>
+    <button class="right strong" id="c-done">完成</button>
+  </header>
+  <div class="c-hint" id="c-hint">拖曳紅框的四個角，對準名片的邊緣</div>
+  <div class="c-stage" id="c-stage">
+    <canvas id="c-img"></canvas>
+    <svg id="c-svg"></svg>
+    <canvas id="c-loupe" hidden></canvas>
+  </div>
+  <div class="c-tools">
+    <button id="c-auto"><svg class="i"><use href="#ic-auto"/></svg>自動偵測</button>
+    <button id="c-full"><svg class="i"><use href="#ic-full"/></svg>整張照片</button>
+    <button id="c-rot"><svg class="i"><use href="#ic-rotate"/></svg>旋轉</button>
   </div>
 </section>
 
@@ -407,7 +443,8 @@ function splitDeptTitle(t) {
 
 function parseCard(text) {
   const out = { company:'', name:'', title:'', dept:'', phone:'', ext:'', mobile:'', fax:'', email:'', address:'', website:'' };
-  const lines = String(text || '').split(/\r?\n/).map(cleanLine).filter(l => l.length >= 2);
+  const rawLines = String(text || '').split(/\r?\n/).filter(r => cleanLine(r).length >= 2);
+  const lines = rawLines.map(cleanLine);
   const used = new Set();
 
   // Email / 網址
@@ -505,6 +542,11 @@ function parseCard(text) {
       if (cjkOnly(c) && c.length >= 2 && c.length <= 4) { cand = c; s = 3; }
       else if (lead) { cand = lead[1]; s = 3; }
       else if (/^[A-Z][a-zA-Z'\-]+(?:\s+[A-Z][a-zA-Z'\-.]+){1,2}$/.test(l) && !TITLE_RE.test(l) && !companyScore(l)) { cand = l; s = 1; }
+      else {
+        // 「陳志明 店長」這種：第一個詞是 2～4 個中文字的姓名，後面可能是辨識錯的職稱
+        const tok = rawLines[i].trim().split(/\s+/)[0] || '';
+        if (cjkOnly(tok) && tok.length >= 2 && tok.length <= 4 && c.length <= 10 && !isAddress(l)) { cand = tok; s = 1; }
+      }
       if (!cand) return;
       if (TITLE_RE.test(cand) || companyScore(cand) || /[市縣區路街號樓部處課組]/.test(cand)) return;
       if (SURNAMES.includes(cand[0]) || DOUBLE_SURNAMES.some(d => cand.startsWith(d))) s += 4;
@@ -557,6 +599,7 @@ const hay = new Map();
 const urls = new Map();
 let mode = 'all', companyFilter = null, currentId = null, edit = null, fileTarget = 'new';
 
+const BLOB_KEYS = ['image', 'thumb', 'imageBack', 'imageOrig', 'imageBackOrig'];
 const byId = id => cards.find(c => c.id === id);
 const companyKey = c => (c.company || '').trim() || '（未填公司）';
 const norm = s => String(s || '').toLowerCase().replace(/[\s\-–—()（）.,，_]/g, '');
@@ -574,12 +617,12 @@ function blobURL(c, kind) {
   return url;
 }
 function dropURLs(id) {
-  for (const k of ['image', 'thumb', 'imageBack']) { const h = urls.get(id + ':' + k); if (h) { URL.revokeObjectURL(h.url); urls.delete(id + ':' + k); } }
+  for (const k of BLOB_KEYS) { const h = urls.get(id + ':' + k); if (h) { URL.revokeObjectURL(h.url); urls.delete(id + ':' + k); } }
 }
 
 /* ============================ 畫面切換 ============================ */
 function show(name) {
-  for (const v of ['list', 'detail', 'edit']) $('#v-' + v).classList.toggle('active', v === name);
+  for (const v of ['list', 'detail', 'edit', 'crop']) $('#v-' + v).classList.toggle('active', v === name);
 }
 let toastT;
 function toast(msg) {
@@ -760,6 +803,146 @@ function crop(src, x, y, w, h) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   c.getContext('2d').drawImage(src, x, y, w, h, 0, 0, w, h); return c;
 }
+/* ---- 自動偵測名片位置 ----
+   以照片四周的顏色當作「桌面背景」，找出跟背景差異最大的一大塊區域，
+   再取這塊區域最外側的四個角。 */
+function fullQuad(src) { return [[0, 0], [src.width, 0], [src.width, src.height], [0, src.height]]; }
+function insetQuad(src, f) {
+  const w = src.width, h = src.height, dx = w * f, dy = h * f;
+  return [[dx, dy], [w - dx, dy], [w - dx, h - dy], [dx, h - dy]];
+}
+function quadArea(q) { let a = 0; for (let i = 0; i < 4; i++) { const [x1, y1] = q[i], [x2, y2] = q[(i + 1) % 4]; a += x1 * y2 - x2 * y1; } return Math.abs(a) / 2; }
+function isConvex(q) {
+  let sign = 0;
+  for (let i = 0; i < 4; i++) {
+    const a = q[i], b = q[(i + 1) % 4], c = q[(i + 2) % 4];
+    const z = (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]);
+    if (Math.abs(z) < 1e-6) continue;
+    if (sign === 0) sign = Math.sign(z); else if (Math.sign(z) !== sign) return false;
+  }
+  return true;
+}
+function detectCard(src) {
+  const S = 360, sc = S / Math.max(src.width, src.height);
+  const w = Math.max(8, Math.round(src.width * sc)), h = Math.max(8, Math.round(src.height * sc));
+  const c = toCanvas(src, w, h), d = c.getContext('2d').getImageData(0, 0, w, h).data, N = w * h;
+  // 3x3 模糊，減少桌面紋理雜訊
+  const r = new Float32Array(N), g = new Float32Array(N), b = new Float32Array(N);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    let sr = 0, sg = 0, sb = 0, n = 0;
+    for (let yy = Math.max(0, y - 1); yy <= Math.min(h - 1, y + 1); yy++)
+      for (let xx = Math.max(0, x - 1); xx <= Math.min(w - 1, x + 1); xx++) { const k = (yy * w + xx) * 4; sr += d[k]; sg += d[k + 1]; sb += d[k + 2]; n++; }
+    const i = y * w + x; r[i] = sr / n; g[i] = sg / n; b[i] = sb / n;
+  }
+  // 背景顏色＝照片外圈的中位數
+  const ring = Math.max(2, Math.round(Math.min(w, h) * 0.04)), br = [], bg = [], bb = [];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    if (x >= ring && x < w - ring && y >= ring && y < h - ring) continue;
+    const i = y * w + x; br.push(r[i]); bg.push(g[i]); bb.push(b[i]);
+  }
+  const med = a => { a.sort((p, q) => p - q); return a[a.length >> 1]; };
+  const mr = med(br), mg = med(bg), mb = med(bb);
+  const dist = new Uint16Array(N), hist = new Uint32Array(256);
+  for (let i = 0; i < N; i++) {
+    const v = Math.min(255, (Math.abs(r[i] - mr) + Math.abs(g[i] - mg) + Math.abs(b[i] - mb)) / 2 | 0);
+    dist[i] = v; hist[v]++;
+  }
+  // Otsu 自動門檻
+  let sum = 0; for (let i = 0; i < 256; i++) sum += i * hist[i];
+  let sumB = 0, wB = 0, best = 0, th = 30;
+  for (let t = 0; t < 256; t++) {
+    wB += hist[t]; if (!wB) continue; const wF = N - wB; if (!wF) break;
+    sumB += t * hist[t]; const mB = sumB / wB, mF = (sum - sumB) / wF, v = wB * wF * (mB - mF) ** 2;
+    if (v > best) { best = v; th = t; }
+  }
+  th = Math.max(th, 18);
+  // 找最大的連通區塊
+  const lab = new Int32Array(N); let bestLab = 0, bestSize = 0, cur = 0; const stack = new Int32Array(N);
+  for (let i = 0; i < N; i++) {
+    if (lab[i] || dist[i] <= th) continue;
+    cur++; let sp = 0, size = 0; stack[sp++] = i; lab[i] = cur;
+    while (sp) {
+      const p = stack[--sp]; size++;
+      const x = p % w, y = (p / w) | 0;
+      if (x > 0 && !lab[p - 1] && dist[p - 1] > th) { lab[p - 1] = cur; stack[sp++] = p - 1; }
+      if (x < w - 1 && !lab[p + 1] && dist[p + 1] > th) { lab[p + 1] = cur; stack[sp++] = p + 1; }
+      if (y > 0 && !lab[p - w] && dist[p - w] > th) { lab[p - w] = cur; stack[sp++] = p - w; }
+      if (y < h - 1 && !lab[p + w] && dist[p + w] > th) { lab[p + w] = cur; stack[sp++] = p + w; }
+    }
+    if (size > bestSize) { bestSize = size; bestLab = cur; }
+  }
+  const fallback = insetQuad(src, 0.05);
+  if (!bestLab || bestSize < N * 0.08 || bestSize > N * 0.97) return { quad: fallback, auto: false };
+  // 四個角：x+y 最小＝左上、x−y 最大＝右上、x+y 最大＝右下、y−x 最大＝左下
+  let tl, tr, brp, bl, a1 = Infinity, a2 = -Infinity, a3 = -Infinity, a4 = -Infinity;
+  for (let i = 0; i < N; i++) {
+    if (lab[i] !== bestLab) continue;
+    const x = i % w + 0.5, y = (i / w | 0) + 0.5;
+    if (x + y < a1) { a1 = x + y; tl = [x, y]; }
+    if (x - y > a2) { a2 = x - y; tr = [x, y]; }
+    if (x + y > a3) { a3 = x + y; brp = [x, y]; }
+    if (y - x > a4) { a4 = y - x; bl = [x, y]; }
+  }
+  const q = [tl, tr, brp, bl].map(([x, y]) => [Math.min(src.width, Math.max(0, x / sc)), Math.min(src.height, Math.max(0, y / sc))]);
+  const cx = q.reduce((a, p) => a + p[0], 0) / 4, cy = q.reduce((a, p) => a + p[1], 0) / 4;
+  for (const p of q) { p[0] = Math.min(src.width, Math.max(0, cx + (p[0] - cx) * 1.035)); p[1] = Math.min(src.height, Math.max(0, cy + (p[1] - cy) * 1.035)); }
+  const area = quadArea(q), full = src.width * src.height;
+  if (!isConvex(q) || area < full * 0.08 || area > full * 0.98) return { quad: fallback, auto: false };
+  return { quad: q, auto: true };
+}
+
+/* ---- 依四個角把名片拉正（透視校正） ---- */
+function solve8(A, b) {
+  const n = 8, M = A.map((row, i) => [...row, b[i]]);
+  for (let c = 0; c < n; c++) {
+    let piv = c; for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[piv][c])) piv = r;
+    [M[c], M[piv]] = [M[piv], M[c]];
+    const pv = M[c][c]; if (Math.abs(pv) < 1e-12) return null;
+    for (let k = c; k <= n; k++) M[c][k] /= pv;
+    for (let r = 0; r < n; r++) if (r !== c) { const f = M[r][c]; if (f) for (let k = c; k <= n; k++) M[r][k] -= f * M[c][k]; }
+  }
+  return M.map(r => r[n]);
+}
+function homography(from, to) {
+  const A = [], b = [];
+  for (let i = 0; i < 4; i++) {
+    const [x, y] = from[i], [u, v] = to[i];
+    A.push([x, y, 1, 0, 0, 0, -u * x, -u * y]); b.push(u);
+    A.push([0, 0, 0, x, y, 1, -v * x, -v * y]); b.push(v);
+  }
+  const h = solve8(A, b); return h && [...h, 1];
+}
+function warpQuad(src, q) {
+  const dd = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  let W = Math.max(dd(q[0], q[1]), dd(q[3], q[2])), H = Math.max(dd(q[0], q[3]), dd(q[1], q[2]));
+  const s = Math.min(1, 2000 / Math.max(W, H));
+  W = Math.max(16, Math.round(W * s)); H = Math.max(16, Math.round(H * s));
+  const h = homography([[0, 0], [W, 0], [W, H], [0, H]], q);
+  if (!h) return null;
+  const sw = src.width, sh = src.height, sd = src.getContext('2d').getImageData(0, 0, sw, sh).data;
+  const out = document.createElement('canvas'); out.width = W; out.height = H;
+  const ox = out.getContext('2d'), od = ox.createImageData(W, H), o = od.data;
+  for (let y = 0; y < H; y++) {
+    const yy = y + 0.5;
+    for (let x = 0; x < W; x++) {
+      const xx = x + 0.5, den = h[6] * xx + h[7] * yy + 1;
+      let fx = (h[0] * xx + h[1] * yy + h[2]) / den - 0.5, fy = (h[3] * xx + h[4] * yy + h[5]) / den - 0.5;
+      fx = fx < 0 ? 0 : fx > sw - 1 ? sw - 1 : fx; fy = fy < 0 ? 0 : fy > sh - 1 ? sh - 1 : fy;
+      const x0 = fx | 0, y0 = fy | 0, x1 = Math.min(sw - 1, x0 + 1), y1 = Math.min(sh - 1, y0 + 1), ax = fx - x0, ay = fy - y0;
+      const i00 = (y0 * sw + x0) * 4, i10 = (y0 * sw + x1) * 4, i01 = (y1 * sw + x0) * 4, i11 = (y1 * sw + x1) * 4, k = (y * W + x) * 4;
+      for (let ch = 0; ch < 3; ch++) {
+        const top = sd[i00 + ch] + (sd[i10 + ch] - sd[i00 + ch]) * ax, bot = sd[i01 + ch] + (sd[i11 + ch] - sd[i01 + ch]) * ax;
+        o[k + ch] = top + (bot - top) * ay;
+      }
+      o[k + 3] = 255;
+    }
+  }
+  ox.putImageData(od, 0, 0);
+  return out;
+}
+// 照片順時針轉 90° 時，紅框的四個點跟著轉，並維持「左上、右上、右下、左下」的順序
+function rotateQuad(q, srcH) { const r = q.map(([x, y]) => [srcH - y, x]); return [r[3], r[0], r[1], r[2]]; }
+
 function canvasBlob(c, q) { return new Promise(r => c.toBlob(r, 'image/jpeg', q)); }
 function prepForOCR(src) {
   // 放大太小的照片、轉灰階、拉高對比，提升辨識率
@@ -844,25 +1027,33 @@ async function recognizeCard(w, src) {
   const { data } = await w.recognize(img);
   const lines = data.lines || [];
   if (!lines.length) return data.text || '';
-  // 第二輪：名片上大小字混排時，小字常被辨識成亂碼；把低信心的字段單獨裁切再辨識一次
+  // 第二輪：名片上大小字混排時，小字常被辨識錯；把同一行中連續的低信心字段合併裁切，單獨再辨識一次
   const out = []; let tries = 0;
+  const weak = wd => wd.confidence < 62 && !/\d{3}|@/.test(wd.text);
   try {
     for (const l of lines) {
-      const words = [];
-      for (const wd of l.words || []) {
-        let t = wd.text;
-        const b = wd.bbox, bw = b.x1 - b.x0, bh = b.y1 - b.y0;
-        if (tries < 6 && wd.confidence < 60 && !new RegExp(`[${CJK}]`).test(t) && !/\d{3}|@/.test(t) && bw > bh * 1.2 && bh > 14) {
+      const ws = l.words || [], parts = [];
+      for (let i = 0; i < ws.length;) {
+        if (!weak(ws[i])) { parts.push(ws[i].text); i++; continue; }
+        let j = i; while (j < ws.length && weak(ws[j])) j++;
+        const seg = ws.slice(i, j);
+        let text = seg.map(w => w.text).join(' ');
+        const bx = { x0: Math.min(...seg.map(w => w.bbox.x0)), y0: Math.min(...seg.map(w => w.bbox.y0)), x1: Math.max(...seg.map(w => w.bbox.x1)), y1: Math.max(...seg.map(w => w.bbox.y1)) };
+        const bw = bx.x1 - bx.x0, bh = bx.y1 - bx.y0;
+        if (tries < 8 && bh > 14 && bw > bh * 0.6) {
           tries++;
-          const pad = Math.round(bh * 0.35);
+          const pad = Math.round(bh * 0.35), conf = seg.reduce((a, w) => a + w.confidence, 0) / seg.length;
           await w.setParameters({ tessedit_pageseg_mode: '7' });
-          const r = (await w.recognize(crop(img, b.x0 - pad, b.y0 - pad, bw + 2 * pad, bh + 2 * pad))).data;
+          const r = (await w.recognize(crop(img, bx.x0 - pad, bx.y0 - pad, bw + 2 * pad, bh + 2 * pad))).data;
           const rt = (r.text || '').trim();
-          if (rt && r.confidence > wd.confidence + 10) t = rt;
+          // 中文字段：替換後的字數不能比原本多太多（避免把旁邊的字也讀進來）
+          const origLen = text.replace(/\s/g, '').length, newLen = rt.replace(/\s/g, '').length;
+          const cjkSeg = new RegExp(`[${CJK}]`).test(text);
+          if (rt && r.confidence > conf + 8 && (!cjkSeg || newLen <= origLen + (origLen >= 3 ? 1 : 0))) text = rt;
         }
-        words.push(t);
+        parts.push(text); i = j;
       }
-      out.push(words.join(' '));
+      out.push(parts.join(' '));
     }
   } finally { if (tries) await w.setParameters({ tessedit_pageseg_mode: '3' }); }
   return out.join('\n');
@@ -893,10 +1084,109 @@ function flash(inp) { const l = inp.closest('.fld'); l.classList.remove('flash')
 function setTools() {
   if (!edit) return;
   const has = !!edit[edit.side].canvas;
-  $('#e-rotate').disabled = !has; $('#e-reocr').disabled = !has || ocrBusy;
+  $('#e-rotate').disabled = !has; $('#e-crop').disabled = !has; $('#e-reocr').disabled = !has || ocrBusy;
   $('#e-remove').hidden = !(edit.side === 'back' && has);
   $('#e-retake-t').textContent = has ? '換照片' : (edit.side === 'back' ? '拍背面' : '拍照');
 }
+
+/* ============================ 調整範圍（紅框） ============================ */
+const cropS = { src: null, quad: null, done: null, cancel: null, ds: 1, ox: 0, oy: 0, drag: null };
+function openCrop(src, quad, onDone, onCancel) {
+  cropS.src = src; cropS.done = onDone; cropS.cancel = onCancel;
+  if (quad) { cropS.quad = quad.map(p => p.slice()); setCropHint(null); }
+  else { const r = detectCard(src); cropS.quad = r.quad; setCropHint(r.auto); }
+  show('crop');
+  requestAnimationFrame(layoutCrop);
+}
+function setCropHint(auto) {
+  $('#c-hint').textContent = auto === false ? '沒有自動找到名片邊緣，請拖曳紅框的四個角對準名片'
+    : auto ? '已自動找到名片，可拖曳四個角或邊微調' : '拖曳紅框的四個角，對準名片的邊緣';
+}
+function layoutCrop() {
+  const st = $('#c-stage'), W = st.clientWidth, H = st.clientHeight, src = cropS.src;
+  if (!W || !src) return;
+  const pad = 22, ds = Math.min((W - pad * 2) / src.width, (H - pad * 2) / src.height);
+  const dw = src.width * ds, dh = src.height * ds, dpr = Math.min(3, window.devicePixelRatio || 1);
+  cropS.ds = ds; cropS.ox = (W - dw) / 2; cropS.oy = (H - dh) / 2;
+  const c = $('#c-img');
+  c.width = Math.round(dw * dpr); c.height = Math.round(dh * dpr);
+  Object.assign(c.style, { left: cropS.ox + 'px', top: cropS.oy + 'px', width: dw + 'px', height: dh + 'px' });
+  const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(src, 0, 0, c.width, c.height);
+  drawCrop();
+}
+const toScr = ([x, y]) => [cropS.ox + x * cropS.ds, cropS.oy + y * cropS.ds];
+function handles() {
+  const q = cropS.quad.map(toScr), hs = q.map((p, i) => ({ k: 'c', i, p }));
+  for (let i = 0; i < 4; i++) { const a = q[i], b = q[(i + 1) % 4]; hs.push({ k: 'e', i, p: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] }); }
+  return hs;
+}
+function drawCrop() {
+  const st = $('#c-stage'), W = st.clientWidth, H = st.clientHeight;
+  const q = cropS.quad.map(toScr), poly = q.map(p => p.map(v => v.toFixed(1)).join(',')).join(' ');
+  const path = `M0 0H${W}V${H}H0Z M${q.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' L')}Z`;
+  const hs = handles();
+  $('#c-svg').setAttribute('viewBox', `0 0 ${W} ${H}`);
+  $('#c-svg').innerHTML = `<path d="${path}" fill="rgba(0,0,0,.55)" fill-rule="evenodd"/>
+    <polygon points="${poly}" fill="none" stroke="#ff3b30" stroke-width="2.5" stroke-linejoin="round"/>
+    ${hs.filter(h => h.k === 'e').map(h => `<circle cx="${h.p[0]}" cy="${h.p[1]}" r="6" fill="#ff3b30" stroke="#fff" stroke-width="2"/>`).join('')}
+    ${hs.filter(h => h.k === 'c').map(h => `<circle cx="${h.p[0]}" cy="${h.p[1]}" r="12" fill="rgba(255,59,48,.35)" stroke="#fff" stroke-width="2.5"/><circle cx="${h.p[0]}" cy="${h.p[1]}" r="3" fill="#ff3b30"/>`).join('')}`;
+}
+function drawLoupe(px, py, ptImg) {
+  const L = $('#c-loupe'), size = 124, dpr = Math.min(3, window.devicePixelRatio || 1), st = $('#c-stage');
+  L.hidden = false; L.width = size * dpr; L.height = size * dpr;
+  let lx = px - size / 2, ly = py - size - 46;
+  if (ly < 6) ly = py + 46;
+  lx = Math.max(6, Math.min(st.clientWidth - size - 6, lx));
+  L.style.left = lx + 'px'; L.style.top = ly + 'px';
+  const zoom = 3, k = cropS.ds * zoom * dpr, x = L.getContext('2d');
+  x.setTransform(1, 0, 0, 1, 0, 0); x.fillStyle = '#000'; x.fillRect(0, 0, L.width, L.height);
+  x.setTransform(k, 0, 0, k, L.width / 2 - ptImg[0] * k, L.height / 2 - ptImg[1] * k);
+  x.drawImage(cropS.src, 0, 0);
+  x.strokeStyle = '#ff3b30'; x.lineWidth = 2 * dpr / k; x.beginPath();
+  cropS.quad.forEach((p, i) => i ? x.lineTo(p[0], p[1]) : x.moveTo(p[0], p[1])); x.closePath(); x.stroke();
+  x.setTransform(1, 0, 0, 1, 0, 0); x.strokeStyle = '#fff'; x.lineWidth = dpr;
+  const m = L.width / 2; x.beginPath(); x.moveTo(m - 10 * dpr, m); x.lineTo(m + 10 * dpr, m); x.moveTo(m, m - 10 * dpr); x.lineTo(m, m + 10 * dpr); x.stroke();
+}
+(function bindCrop() {
+  const st = $('#c-stage');
+  const local = e => { const r = st.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  st.addEventListener('pointerdown', e => {
+    if (!cropS.src) return;
+    const [px, py] = local(e);
+    let best = null, bd = 44;
+    for (const hd of handles()) {
+      const d = Math.hypot(hd.p[0] - px, hd.p[1] - py) - (hd.k === 'c' ? 8 : 0);
+      if (d < bd) { bd = d; best = hd; }
+    }
+    if (!best) return;
+    e.preventDefault(); st.setPointerCapture(e.pointerId);
+    cropS.drag = { h: best, start: [px, py], q0: cropS.quad.map(p => p.slice()) };
+  });
+  st.addEventListener('pointermove', e => {
+    const dg = cropS.drag; if (!dg) return;
+    e.preventDefault();
+    const [px, py] = local(e), dx = (px - dg.start[0]) / cropS.ds, dy = (py - dg.start[1]) / cropS.ds;
+    const W = cropS.src.width, H = cropS.src.height, cl = (v, m) => Math.max(0, Math.min(m, v));
+    const idx = dg.h.k === 'c' ? [dg.h.i] : [dg.h.i, (dg.h.i + 1) % 4];
+    for (const i of idx) cropS.quad[i] = [cl(dg.q0[i][0] + dx, W), cl(dg.q0[i][1] + dy, H)];
+    drawCrop();
+    const focus = dg.h.k === 'c' ? cropS.quad[dg.h.i] : [(cropS.quad[idx[0]][0] + cropS.quad[idx[1]][0]) / 2, (cropS.quad[idx[0]][1] + cropS.quad[idx[1]][1]) / 2];
+    const [fx, fy] = toScr(focus); drawLoupe(fx, fy, focus);
+  });
+  const end = () => { cropS.drag = null; $('#c-loupe').hidden = true; };
+  st.addEventListener('pointerup', end); st.addEventListener('pointercancel', end);
+  window.addEventListener('resize', () => { if ($('#v-crop').classList.contains('active')) layoutCrop(); });
+})();
+$('#c-auto').onclick = () => { const r = detectCard(cropS.src); cropS.quad = r.quad; setCropHint(r.auto); drawCrop(); };
+$('#c-full').onclick = () => { cropS.quad = fullQuad(cropS.src); setCropHint(null); drawCrop(); };
+$('#c-rot').onclick = () => { const h = cropS.src.height; cropS.src = rotate90(cropS.src); cropS.quad = rotateQuad(cropS.quad, h); layoutCrop(); };
+$('#c-cancel').onclick = () => { const f = cropS.cancel; cropS.src = null; f && f(); };
+$('#c-done').onclick = () => {
+  const q = cropS.quad;
+  if (!isConvex(q) || quadArea(q) < cropS.src.width * cropS.src.height * 0.01) { toast('紅框的形狀不正確，請重新調整四個角'); return; }
+  const f = cropS.done, src = cropS.src; cropS.src = null;
+  f(src, q.map(p => p.slice()));
+};
 
 /* ============================ 新增 / 編輯 ============================ */
 function buildForm() {
@@ -954,7 +1244,7 @@ function fillFromLine(k, line) {
 }
 function openEditor(c, isNew) {
   ocrQueue.clear();
-  const side = text => ({ canvas: null, ver: 0, text: text || '', changed: false });
+  const side = text => ({ canvas: null, orig: null, quad: null, ver: 0, text: text || '', changed: false });
   edit = { id: isNew ? null : c.id, isNew, side: 'front', front: side(c.rawText), back: side(c.rawTextBack), auto: {}, start: '' };
   $('#e-title').textContent = isNew ? '新增名片' : '編輯名片';
   fillForm(c); edit.start = JSON.stringify(readForm());
@@ -971,23 +1261,40 @@ async function startEdit(id) {
   const c = byId(id); if (!c) return;
   openEditor(c, false);
   const s = edit;
-  for (const [side, key] of [['front', 'image'], ['back', 'imageBack']]) {
+  for (const [side, key, okey, qkey] of [['front', 'image', 'imageOrig', 'quad'], ['back', 'imageBack', 'imageBackOrig', 'quadBack']]) {
     if (!c[key]) continue;
     const cv = await blobToCanvas(c[key]);
+    const orig = c[okey] && c[qkey] ? await blobToCanvas(c[okey]) : null;
     if (edit !== s) return;
-    edit[side].canvas = cv; showPhoto();
+    const sd = edit[side];
+    sd.canvas = cv; sd.orig = orig || cv; sd.quad = orig ? c[qkey] : fullQuad(cv);
+    showPhoto();
   }
 }
 async function setPhoto(file, side) {
   const s = edit;
-  try {
-    setOCR('讀取照片…', 0.01);
-    const cv = await blobToCanvas(file);
-    if (edit !== s) return;
-    const sd = edit[side];
-    sd.canvas = cv; sd.ver++; sd.changed = true; sd.text = '';
-    edit.side = side; showPhoto(); runOCR(side);
-  } catch (e) { setOCR('這張照片無法讀取，請換一張。', null, 'err'); }
+  let cv;
+  try { cv = await blobToCanvas(file); }
+  catch (e) { show('edit'); setOCR('這張照片無法讀取，請換一張。', null, 'err'); return; }
+  if (edit !== s) return;
+  // 拍完先進入「調整範圍」：自動框出名片，使用者可微調
+  openCrop(cv, null, (src, quad) => applyCrop(side, src, quad), () => {
+    if (edit && edit.isNew && !edit.front.canvas && !edit.back.canvas) leaveEditor();
+    else show('edit');
+  });
+}
+function applyCrop(side, src, quad) {
+  if (!edit) return;
+  const out = warpQuad(src, quad);
+  if (!out) { toast('無法裁切，請重新調整紅框'); show('edit'); return; }
+  const sd = edit[side];
+  sd.orig = src; sd.quad = quad; sd.canvas = out; sd.ver++; sd.changed = true; sd.text = '';
+  edit.side = side; show('edit'); showPhoto(); runOCR(side);
+}
+function leaveEditor() {
+  const wasNew = edit.isNew, id = edit.id;
+  edit = null; ocrQueue.clear(); setOCR(null);
+  if (wasNew) { renderList(); show('list'); } else openDetail(id);
 }
 function pickPhoto() { fileTarget = edit.side; $('#file').value = ''; $('#file').click(); }
 $('#fab').onclick = () => { fileTarget = 'new'; $('#file').value = ''; $('#file').click(); };
@@ -1004,19 +1311,24 @@ $('#sides').onclick = e => {
 };
 $('#e-rotate').onclick = () => {
   const sd = edit && edit[edit.side]; if (!sd || !sd.canvas) return;
-  sd.canvas = rotate90(sd.canvas); sd.ver++; sd.changed = true;
+  sd.canvas = rotate90(sd.canvas);
+  if (sd.orig) { const h = sd.orig.height; sd.orig = rotate90(sd.orig); sd.quad = rotateQuad(sd.quad, h); }
+  sd.ver++; sd.changed = true;
   showPhoto(); runOCR(edit.side);
+};
+$('#e-crop').onclick = () => {
+  const side = edit && edit.side, sd = side && edit[side]; if (!sd || !sd.canvas) return;
+  openCrop(sd.orig || sd.canvas, sd.quad || fullQuad(sd.orig || sd.canvas), (src, quad) => applyCrop(side, src, quad), () => show('edit'));
 };
 $('#e-reocr').onclick = () => runOCR(edit.side);
 $('#e-remove').onclick = () => sheet('要移除背面照片嗎？', [{ label: '移除背面', danger: true, fn: () => {
-  edit.back = { canvas: null, ver: edit.back.ver + 1, text: '', changed: true };
+  edit.back = { canvas: null, orig: null, quad: null, ver: edit.back.ver + 1, text: '', changed: true };
   ocrQueue.delete('back'); edit.side = 'front'; showPhoto(); renderRaw(); setOCR(null);
 } }]);
 $('#e-cancel').onclick = () => {
   const dirty = JSON.stringify(readForm()) !== edit.start || edit.front.changed || edit.back.changed;
-  const leave = () => { const wasNew = edit.isNew, id = edit.id; edit = null; ocrQueue.clear(); setOCR(null); if (wasNew) { renderList(); show('list'); } else openDetail(id); };
-  if (dirty) sheet(edit.isNew ? '要放棄這張名片嗎？' : '要放棄這次的修改嗎？', [{ label: '放棄', danger: true, fn: leave }]);
-  else leave();
+  if (dirty) sheet(edit.isNew ? '要放棄這張名片嗎？' : '要放棄這次的修改嗎？', [{ label: '放棄', danger: true, fn: leaveEditor }]);
+  else leaveEditor();
 };
 $('#e-save').onclick = async () => {
   const data = readForm();
@@ -1029,8 +1341,16 @@ $('#e-save').onclick = async () => {
       createdAt: old ? old.createdAt : now, updatedAt: now,
     });
     const thumbSrc = edit.front.canvas || edit.back.canvas;
-    if (edit.front.changed && edit.front.canvas) rec.image = await canvasBlob(fit(edit.front.canvas, 1400), 0.82);
-    if (edit.back.changed) rec.imageBack = edit.back.canvas ? await canvasBlob(fit(edit.back.canvas, 1400), 0.82) : null;
+    // 儲存裁切後的名片，以及原始照片＋紅框位置（之後可以再「調整範圍」）
+    for (const [side, key, okey, qkey] of [['front', 'image', 'imageOrig', 'quad'], ['back', 'imageBack', 'imageBackOrig', 'quadBack']]) {
+      const sd = edit[side]; if (!sd.changed) continue;
+      if (!sd.canvas) { rec[key] = rec[okey] = rec[qkey] = null; continue; }
+      rec[key] = await canvasBlob(fit(sd.canvas, 1400), 0.82);
+      if (sd.orig && sd.quad) {
+        const o = fit(sd.orig, 1600), f = o.width / sd.orig.width;
+        rec[okey] = await canvasBlob(o, 0.8); rec[qkey] = sd.quad.map(([x, y]) => [x * f, y * f]);
+      } else { rec[okey] = rec[qkey] = null; }
+    }
     if (thumbSrc && (edit.front.changed || (!edit.front.canvas && edit.back.changed))) rec.thumb = await canvasBlob(fit(thumbSrc, 360), 0.72);
     if (!thumbSrc) rec.thumb = null;
     await DB.put(rec);
@@ -1084,7 +1404,7 @@ async function exportJSON() {
   if (!cards.length) return toast('目前沒有名片可以備份');
   toast('準備備份檔…');
   const out = [];
-  for (const c of cards) out.push(Object.assign({}, c, { image: await blobToDataURL(c.image), imageBack: await blobToDataURL(c.imageBack), thumb: await blobToDataURL(c.thumb) }));
+  for (const c of cards) { const o = Object.assign({}, c); for (const k of BLOB_KEYS) o[k] = await blobToDataURL(c[k]); out.push(o); }
   const blob = new Blob([JSON.stringify({ app: 'cardbox', version: 1, exportedAt: new Date().toISOString(), cards: out })], { type: 'application/json' });
   await share(blob, `名片備份-${stamp()}.json`);
 }
@@ -1104,9 +1424,7 @@ async function importJSON(file) {
     for (const raw of data.cards) {
       if (!raw || !raw.id) continue;
       const c = Object.assign({}, raw);
-      c.image = raw.image ? await (await fetch(raw.image)).blob() : null;
-      c.thumb = raw.thumb ? await (await fetch(raw.thumb)).blob() : null;
-      c.imageBack = raw.imageBack ? await (await fetch(raw.imageBack)).blob() : null;
+      for (const k of BLOB_KEYS) c[k] = raw[k] ? await (await fetch(raw[k])).blob() : null;
       await DB.put(c);
       cards = cards.filter(x => x.id !== c.id); cards.push(c); index(c); n++;
     }

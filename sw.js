@@ -1,6 +1,6 @@
 // 名片夾 service worker：讓 App 可以離線開啟
 // 更新 App 時，把下面的版本號改一下（例如 v2），手機就會抓新版。
-const VERSION = 'cardbox-v2';
+const VERSION = 'cardbox-v3';
 const CDN = 'cardbox-cdn';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png'];
 
