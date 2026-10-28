@@ -164,6 +164,11 @@ a.kv .v{color:var(--accent)}
 .pair{display:grid;grid-template-columns:1fr 34%;border-top:1px solid var(--line)}
 .pair .fld{border-top:0}
 .pair .fld+.fld{border-left:1px solid var(--line)}
+.sugg{display:flex;flex-wrap:wrap;gap:6px;padding:2px 0 6px}
+.chip{background:var(--accent-soft);color:var(--accent);border-radius:14px;padding:5px 11px;font-size:13.5px;font-weight:600;text-align:left}
+.chip small{opacity:.65;margin-left:5px;font-weight:500;font-size:12px}
+.chip.undo{background:var(--surface2);color:var(--muted);border:1px solid var(--line);font-weight:500}
+.matched{width:100%;font-size:12.5px;font-weight:600;color:var(--accent)}
 .raw{margin-top:16px}
 .raw summary{font-size:14px;font-weight:600;color:var(--muted);padding:6px 2px;cursor:pointer}
 .raw-lines{display:flex;flex-wrap:wrap;gap:6px;padding:6px 0}
@@ -601,7 +606,9 @@ let mode = 'all', companyFilter = null, currentId = null, edit = null, fileTarge
 
 const BLOB_KEYS = ['image', 'thumb', 'imageBack', 'imageOrig', 'imageBackOrig'];
 const byId = id => cards.find(c => c.id === id);
-const companyKey = c => (c.company || '').trim() || '（未填公司）';
+const companyKey = c => nk(c.company) || '（未填公司）';
+const NO_CO = '（未填公司）';
+function companyLabel(list) { const m = new Map(); for (const c of list) { const v = (c.company || '').trim(); if (v) m.set(v, (m.get(v) || 0) + 1); } let b = NO_CO, n = 0; for (const [v, k] of m) if (k > n) { b = v; n = k; } return b; }
 const norm = s => String(s || '').toLowerCase().replace(/[\s\-–—()（）.,，_]/g, '');
 function index(c) {
   hay.set(c.id, norm(FIELDS.map(f => c[f.k]).concat(c.rawText || '', c.rawTextBack || '').join('|')));
@@ -674,18 +681,18 @@ function renderList() {
   } else if (mode === 'company' && companyFilter === null) {
     const groups = new Map();
     for (const c of cards) { const k = companyKey(c); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(c); }
-    const keys = [...groups.keys()].sort((a, b) => (a === '（未填公司）') - (b === '（未填公司）') || a.localeCompare(b, 'zh-Hant-TW'));
+    const keys = [...groups.keys()].sort((a, b) => (a === NO_CO) - (b === NO_CO) || companyLabel(groups.get(a)).localeCompare(companyLabel(groups.get(b)), 'zh-Hant-TW'));
     html = keys.map(k => {
-      const list = groups.get(k);
+      const list = groups.get(k), label = companyLabel(list);
       const names = list.map(c => c.name).filter(Boolean).slice(0, 3).join('、');
       return `<button class="row group" data-co="${esc(k)}">
-        <span class="avatar">${esc([...k.replace(/^（/, '')][0] || '?')}</span>
-        <span class="row-main"><span class="row-name">${esc(k)}</span>${names ? `<span class="row-sub">${esc(names)}${list.length > 3 ? '…' : ''}</span>` : ''}</span>
+        <span class="avatar">${esc([...label.replace(/^（/, '')][0] || '?')}</span>
+        <span class="row-main"><span class="row-name">${esc(label)}</span>${names ? `<span class="row-sub">${esc(names)}${list.length > 3 ? '…' : ''}</span>` : ''}</span>
         <span class="badge">${list.length}</span></button>`;
     }).join('');
   } else {
     const list = mode === 'company' ? cards.filter(c => companyKey(c) === companyFilter) : cards;
-    $('#crumb-title').textContent = companyFilter || '';
+    $('#crumb-title').textContent = mode === 'company' ? companyLabel(list) : '';
     html = list.map(rowHTML).join('');
   }
   $('#list').innerHTML = html;
@@ -960,6 +967,133 @@ function prepForOCR(src) {
   return c;
 }
 
+/* ============================ 比對資料庫中已有的公司／部門／職稱 ============================ */
+const MATCH_FIELDS = ['company', 'dept', 'title'];
+const FREE_MAIL = /^(gmail|googlemail|yahoo|ymail|hotmail|outlook|live|msn|icloud|me|mac|hinet|seed|pchome|kimo|qq|163|126|aol|proton|protonmail)\./;
+const BUILTIN_TITLES = [...new Set(TITLE_WORDS.split('|').concat(['業務經理', '專案經理', '資深專案經理', '產品經理', '行銷經理', '財務經理', '業務副理', '業務主任', '業務專員', '行銷專員', '客服專員', '行政專員', '人資專員', '資深業務', '資深工程師', '軟體工程師', '副店長', '總經理特助', '董事長特助', '會計']))];
+function nk(s) { return String(s || '').toLowerCase().replace(/[\s\-_.,，、·•:：;()（）'"「」|/]/g, ''); }
+function lev(a, b) {
+  if (a === b) return 0;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j), cur = new Array(b.length + 1);
+  for (let i = 1; i <= a.length; i++) {
+    cur[0] = i;
+    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    [prev, cur] = [cur, prev];
+  }
+  return prev[b.length];
+}
+// p 跟 t 裡面「最像的一段」差幾個字（用來在整行辨識文字裡找公司名）
+function fuzzyIn(p, t) {
+  let prev = new Array(t.length + 1).fill(0), cur = new Array(t.length + 1);
+  for (let i = 1; i <= p.length; i++) {
+    cur[0] = i;
+    for (let j = 1; j <= t.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (p[i - 1] === t[j - 1] ? 0 : 1));
+    [prev, cur] = [cur, prev];
+  }
+  return Math.min(...prev);
+}
+// 允許的錯字數：越長的名稱可以容忍越多辨識錯誤
+function closeEnough(len, d) {
+  if (len <= 2) return d === 0;
+  if (len <= 4) return d <= 1;
+  if (len <= 8) return d <= 2;
+  return d / len <= 0.3;
+}
+function sim(a, b) { a = nk(a); b = nk(b); if (!a || !b) return 0; return 1 - lev(a, b) / Math.max(a.length, b.length); }
+function knownValues(k) {
+  const m = new Map();
+  for (const c of cards) { if (edit && c.id === edit.id) continue; const v = (c[k] || '').trim(); if (v) m.set(v, (m.get(v) || 0) + 1); }
+  return m;
+}
+function domainOf(email) { const m = String(email || '').toLowerCase().match(/@([a-z0-9.\-]+)/); return m && !FREE_MAIL.test(m[1]) ? m[1] : ''; }
+function companyByDomain(email) {
+  const d = domainOf(email); if (!d) return '';
+  const m = new Map();
+  for (const c of cards) if (c.company && (!edit || c.id !== edit.id) && domainOf(c.email) === d) m.set(c.company, (m.get(c.company) || 0) + 1);
+  let b = '', n = 0; for (const [v, k] of m) if (k > n) { b = v; n = k; } return b;
+}
+const CO_SUFFIX = /(股份有限公司|有限公司|有限責任|企業社|公司|coltd|co|ltd|inc|corp|corporation|limited|company)+$/;
+function coreLen(kv) { return Math.max(2, kv.replace(CO_SUFFIX, '').length); }
+function phonePrefix(p) { let d = String(p || '').replace(/\D/g, ''); if (d.startsWith('886')) d = '0' + d.slice(3); return d.length >= 8 && !d.startsWith('09') ? d.slice(0, 6) : ''; }
+// 用 Email 網域、市話前幾碼判斷「是不是同一家公司」：+1 支持、-1 矛盾、0 無法判斷
+function evidence(company, email, phones) {
+  const peers = cards.filter(c => c.company === company && (!edit || c.id !== edit.id));
+  const d = domainOf(email), pd = peers.map(c => domainOf(c.email)).filter(Boolean);
+  if (d && pd.length) return pd.includes(d) ? 1 : -1;
+  const np = phones.map(phonePrefix).filter(Boolean), pp = peers.flatMap(c => [phonePrefix(c.phone), phonePrefix(c.fax)]).filter(Boolean);
+  if (np.length && pp.length) return np.some(x => pp.includes(x)) ? 1 : -1;
+  return 0;
+}
+function matchCompany(parsed, lines, email, phones = []) {
+  const known = knownValues('company'), pc = nk(parsed), tl = lines.map(nk).filter(Boolean);
+  let best = null;
+  for (const [v, cnt] of known) {
+    const kv = nk(v); if (kv.length < 2) continue;
+    if (kv === pc) return { value: v, why: 'same' };
+    let d = pc ? lev(kv, pc) : Infinity;
+    for (const t of tl) if (t.length >= kv.length - 2) d = Math.min(d, fuzzyIn(kv, t));
+    // 錯字容忍度以「公司名稱的特徵部分」計算（不含「股份有限公司」等字尾），避免「宏遠建設」被當成「宏達建設」
+    if (!closeEnough(coreLen(kv), d)) continue;
+    const ev = d === 0 ? 1 : evidence(v, email, phones);
+    if (ev < 0) continue;
+    const score = 1 - d / kv.length + ev * 0.2 + Math.min(cnt, 5) * 0.01;
+    if (!best || score > best.score) best = { value: v, score, why: 'fuzzy' };
+  }
+  // 名片上只印簡稱：「宏達建設」→ 資料庫的「宏達建設股份有限公司」
+  if (!best && pc.length >= 4) {
+    for (const [v, cnt] of known) {
+      const kv = nk(v);
+      if (kv.length > pc.length && kv.startsWith(pc.slice(0, 2)) && fuzzyIn(pc, kv) <= (pc.length >= 6 ? 1 : 0) && (!best || cnt > best.cnt)) best = { value: v, cnt, why: 'fuzzy' };
+    }
+  }
+  // 同一個 Email 網域（非 Gmail 等免費信箱）＝同一家公司
+  if (!best) { const v = companyByDomain(email); if (v && (!pc || sim(v, parsed) >= 0.5)) best = { value: v, why: 'domain' }; }
+  return best;
+}
+function matchShort(k, parsed) {
+  const p = nk(parsed); if (!p) return null;
+  const cand = new Map(knownValues(k));
+  if (k === 'title') for (const t of BUILTIN_TITLES) if (!cand.has(t)) cand.set(t, 0);
+  for (const [v] of cand) if (nk(v) === p) return { value: v, why: 'same' };
+  let best = null; const twoChar = [];
+  for (const [v, cnt] of cand) {
+    const kv = nk(v), d = lev(kv, p), L = Math.max(kv.length, p.length);
+    if (L === 2 && kv.length === 2 && d === 1 && kv[0] === p[0]) { twoChar.push({ value: v, cnt }); continue; }  // 經埋 → 經理
+    if (!closeEnough(L, d)) continue;
+    const score = 1 - d / L + Math.min(cnt, 5) * 0.02;
+    if (!best || score > best.score) best = { value: v, score, why: 'fuzzy' };
+  }
+  if (!best && twoChar.length) {
+    twoChar.sort((a, b) => b.cnt - a.cnt);
+    if (twoChar.length === 1 || twoChar[0].cnt > twoChar[1].cnt) best = { value: twoChar[0].value, why: 'fuzzy' };
+  }
+  return best;
+}
+// 欄位下方的建議（點一下就填入）
+function suggestions(k, value) {
+  const v = nk(value), out = [];
+  if (v) for (const [x, cnt] of knownValues(k)) {
+    const kx = nk(x); if (kx === v) continue;
+    const s = kx.includes(v) || v.includes(kx) ? 0.9 : sim(x, value);
+    if (s >= 0.6) out.push({ x, cnt, s });
+  }
+  if (k === 'company' && edit) {
+    const d = companyByDomain($('#e-form').elements.email.value);
+    if (d && nk(d) !== v && !out.some(o => o.x === d)) out.push({ x: d, cnt: knownValues('company').get(d) || 0, s: 0.95 });
+  }
+  return out.sort((a, b) => b.s - a.s || b.cnt - a.cnt).slice(0, 3);
+}
+function renderSugg(k) {
+  const box = document.getElementById('sg-' + k); if (!box || !edit) return;
+  const val = $('#e-form').elements[k].value.trim(), orig = edit.ocrOrig[k];
+  let h = '';
+  if (edit.matched[k] && edit.matched[k] === val) h += `<span class="matched">✓ 已對應到資料庫中的名稱</span>`;
+  h += suggestions(k, val).map(it => `<button type="button" class="chip" data-k="${k}" data-v="${esc(it.x)}">${esc(it.x)}${it.cnt ? `<small>${it.cnt} 張</small>` : ''}</button>`).join('');
+  if (orig && nk(orig) !== nk(val)) h += `<button type="button" class="chip undo" data-k="${k}" data-v="${esc(orig)}">↩ 改回辨識結果：${esc(orig)}</button>`;
+  box.innerHTML = h; box.hidden = !h;
+}
+function renderAllSugg() { MATCH_FIELDS.forEach(renderSugg); }
+
 /* ============================ 文字辨識 ============================ */
 let worker = null, workerP = null, ocrBusy = false, ocrLabel = '';
 const ocrQueue = new Set();
@@ -1062,20 +1196,37 @@ function applyOCR(side) {
   // 正面優先；正面沒有的欄位（例如英文 Email、第二支電話）由背面補上
   const pf = parseCard(edit.front.text), pb = parseCard(edit.back.text);
   const form = $('#e-form');
-  let n = 0;
+  edit.titleRaw = '';
+  const allLines = (edit.front.text + '\n' + edit.back.text).split('\n').map(cleanLine).filter(l => l.length >= 2);
+  const email = form.elements.email.value.trim() || pf.email || pb.email;
+  let n = 0; const fixed = [];
+  // 「業務部 經埋」：先拆出部門，再用剩下的部分比對職稱
+  for (const pr of [pf, pb]) {
+    const m = (pr.title || '').replace(/\s+/g, '').match(new RegExp(`^([${CJK}]{1,8}?(?:部|處|課|組|室|中心))(.{2,})$`));
+    if (m && matchShort('title', m[2])) { edit.titleRaw = pr.title; pr.dept = pr.dept || m[1]; pr.title = m[2]; }
+  }
   for (const f of FIELDS) {
-    const v = pf[f.k] || pb[f.k]; if (!v) continue;
+    let v = pf[f.k] || pb[f.k];
+    // 以資料庫中已有的公司、部門、職稱為主
+    if (MATCH_FIELDS.includes(f.k)) {
+      const m = f.k === 'company' ? matchCompany(v, allLines, email, [pf.phone, pb.phone, pf.fax, pb.fax]) : matchShort(f.k, v);
+      if (m && m.value !== v) { edit.ocrOrig[f.k] = v; edit.matched[f.k] = m.value; v = m.value; fixed.push(FIELDS.find(x => x.k === f.k).label); }
+      else if (m && f.k === 'title' && edit.titleRaw) { edit.ocrOrig.title = edit.titleRaw; edit.matched.title = m.value; }
+      else if (m) { delete edit.ocrOrig[f.k]; edit.matched[f.k] = m.value; }
+      else { delete edit.ocrOrig[f.k]; delete edit.matched[f.k]; }
+    }
+    if (!v) continue;
     const inp = form.elements[f.k], cur = inp.value.trim();
     if (!cur || cur === edit.auto[f.k]) {
       if (cur !== v) { inp.value = v; flash(inp); n++; }
       edit.auto[f.k] = v;
-    }
+    } else if (MATCH_FIELDS.includes(f.k)) { delete edit.ocrOrig[f.k]; delete edit.matched[f.k]; }
   }
-  renderRaw();
+  renderRaw(); renderAllSugg();
   const label = edit.back.canvas ? SIDE_NAME[side] : '';
   const lines = (edit[side].text || '').split('\n').filter(l => l.trim()).length;
   if (!lines) { setOCR(`${label}沒有辨識到文字。試試「旋轉」，或重拍一張更清楚、光線充足的照片。`, null, 'err'); return; }
-  let msg = n ? `${label}辨識完成，自動填入 ${n} 個欄位，請檢查是否正確。`
+  let msg = n ? `${label}辨識完成，自動填入 ${n} 個欄位${fixed.length ? `（${fixed.join('、')}已對應到資料庫中的名稱）` : ''}，請檢查是否正確。`
               : `${label}辨識完成，沒有新的資料需要填入。需要的話可從下方「辨識原文」點選文字。`;
   if (side === 'front' && edit.isNew && !edit.back.canvas) msg += '名片有背面的話，點上方「拍背面」。';
   setOCR(msg, 1, 'done');
@@ -1195,11 +1346,23 @@ function buildForm() {
     if (f.k === 'ext') continue;
     const fld = x => `<label class="fld"><span>${x.label}</span>${x.multi
       ? `<textarea name="${x.k}" rows="3" placeholder="${esc(x.ph || '')}"></textarea>`
-      : `<input name="${x.k}" type="${x.type || 'text'}" ${x.type === 'tel' ? 'inputmode="tel"' : ''} autocapitalize="off" autocorrect="off" spellcheck="false">`}</label>`;
+      : `<input name="${x.k}" type="${x.type || 'text'}" ${x.type === 'tel' ? 'inputmode="tel"' : ''} autocapitalize="off" autocorrect="off" spellcheck="false">`}${MATCH_FIELDS.includes(x.k) ? `<div class="sugg" id="sg-${x.k}" hidden></div>` : ''}</label>`;
     if (f.pair) h += `<div class="pair">${fld(f)}${fld(FIELDS.find(x => x.k === f.pair))}</div>`;
     else h += fld(f);
   }
   $('#e-form').innerHTML = h;
+  $('#e-form').addEventListener('input', e => {
+    const k = e.target.name;
+    if (MATCH_FIELDS.includes(k)) renderSugg(k); else if (k === 'email') renderSugg('company');
+  });
+  $('#e-form').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    e.preventDefault();
+    const k = b.dataset.k, inp = $('#e-form').elements[k];
+    inp.value = b.dataset.v; edit.auto[k] = b.dataset.v;
+    if (b.classList.contains('undo')) delete edit.matched[k]; else edit.matched[k] = b.dataset.v;
+    flash(inp); renderSugg(k);
+  });
 }
 function fillForm(c) { for (const f of FIELDS) $('#e-form').elements[f.k].value = c[f.k] || ''; }
 function readForm() { const o = {}; for (const f of FIELDS) o[f.k] = $('#e-form').elements[f.k].value.trim(); return o; }
@@ -1245,9 +1408,9 @@ function fillFromLine(k, line) {
 function openEditor(c, isNew) {
   ocrQueue.clear();
   const side = text => ({ canvas: null, orig: null, quad: null, ver: 0, text: text || '', changed: false });
-  edit = { id: isNew ? null : c.id, isNew, side: 'front', front: side(c.rawText), back: side(c.rawTextBack), auto: {}, start: '' };
+  edit = { id: isNew ? null : c.id, isNew, side: 'front', front: side(c.rawText), back: side(c.rawTextBack), auto: {}, ocrOrig: {}, matched: {}, start: '' };
   $('#e-title').textContent = isNew ? '新增名片' : '編輯名片';
-  fillForm(c); edit.start = JSON.stringify(readForm());
+  fillForm(c); edit.start = JSON.stringify(readForm()); renderAllSugg();
   setOCR(null); renderRaw(); showPhoto();
   $('#raw').open = false;
   $('#v-edit .scroll').scrollTop = 0;
